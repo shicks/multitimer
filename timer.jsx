@@ -112,14 +112,12 @@ document.body.addEventListener('keypress', (e) => {
 });
 
 function update() {
-  for (const timer of timers) {
-    timer();
-  }
+  timers.forEach((timer) => timer());
   window.setTimeout(update, 1000);
 }
 update();
 
-for (const timer of localStorage &&
-           (localStorage.getItem('timerNames') || '').split('|') || []) {
-  addTimer(unescape(timer));
-}
+const storageTimers =
+    localStorage &&
+    (localStorage.getItem('timerNames') || '').split('|') || [];
+storageTimers.forEach((timer) => addTimer(unescape(timer)));
