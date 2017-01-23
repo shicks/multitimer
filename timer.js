@@ -20499,17 +20499,24 @@ var timerDiv = document.getElementsByClassName('timers')[0];
 var timers = [];
 
 function updateTimers() {
-  var names = Array.prototype.map.call(document.querySelectorAll('.name input'), function (input) {
-    return escape(input.value);
-  }).join('|');
+  var names = timers.map(function (timer) {
+    return timer.label();
+  });
   if (localStorage) {
-    localStorage.setItem('timerNames', names);
+    localStorage.setItem('timerNames', names.join('|'));
   }
 }
 
 function addTimer() {
   var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
 
+  var elapsed = 0;
+  var eq = name.indexOf('=');
+  if (eq > 0) {
+    elapsed = Number(name.substring(eq + 1));
+    name = name.substring(0, eq);
+  }
+  name = unescape(name);
   var element = document.createElement('div');
   ReactDOM.render(React.createElement(
     'div',
@@ -20578,11 +20585,14 @@ function addTimer() {
   var hourTime = child('time-hours');
   var minuteTime = child('time-minutes');
 
-  var elapsed = 0;
   var started = undefined;
 
+  // TODO(sdh): use an object instead of a function as the timer.
+  var currentTime = function currentTime() {
+    return (elapsed + (started ? new Date() - started : 0)) / 1000;
+  };
   var update = function update() {
-    var full = (elapsed + (started ? new Date() - started : 0)) / 1000;
+    var full = currentTime();
     var hours = Math.floor(full / 3600);
     var minutes = String(Math.floor(full % 3600 / 60));
     var seconds = String(Math.floor(full % 60));
@@ -20597,20 +20607,31 @@ function addTimer() {
     hourTime.textContent = hourFrac + '.' + frac + ' h';
     minuteTime.textContent = hours + ':' + minutes + ':' + seconds;
   };
+  update.reset = function () {
+    elapsed = 0;
+    if (started) started = +new Date();
+    update();
+  };
+  update.label = function () {
+    return escape(child('name').firstElementChild.value) + '=' + currentTime();
+  };
 
   timers.push(update);
   child('start').addEventListener('click', function () {
     started = +new Date();
     element.classList.add('started');
+    update();
   });
   child('pause').addEventListener('click', function () {
     elapsed += new Date() - started;
     started = undefined;
     element.classList.remove('started');
+    update();
   });
   child('reset').addEventListener('click', function () {
     elapsed = 0;
     started = started && +new Date();
+    update();
   });
   child('delete').addEventListener('click', function () {
     element.remove();
@@ -20630,6 +20651,11 @@ document.getElementsByClassName('hours')[0].addEventListener('click', function (
 document.getElementsByClassName('minutes')[0].addEventListener('click', function () {
   timerDiv.classList.add('hourmode');
 });
+document.getElementsByClassName('reset-all')[0].addEventListener('click', function () {
+  timers.forEach(function (timer) {
+    return timer.reset();
+  });
+});
 
 document.body.addEventListener('keypress', function (e) {
   if (e.key == 'Enter') e.target.blur();
@@ -20640,12 +20666,13 @@ function update() {
     return timer();
   });
   window.setTimeout(update, 1000);
+  updateTimers();
 }
 update();
 
 var storageTimers = localStorage && (localStorage.getItem('timerNames') || '').split('|') || [];
 storageTimers.forEach(function (timer) {
-  return addTimer(unescape(timer));
+  return addTimer(timer);
 });
 
 },{"react":177,"react-dom":26}]},{},[178]);
