@@ -21,14 +21,26 @@
 .corner {
   background: white;
   border: 1px solid black;
-  border-bottom-left-radius: 6px;
-  border-top-right-radius: 6px;
   height: 32px;
   position: absolute;
+  width: 32px;
+  z-index: 1;
+}
+
+.corner.tl {
+  border-bottom-right-radius: 6px;
+  border-top-left-radius: 6px;
+  left: -1px;
+  top: -1px;
+  width: 32px;
+}
+
+.corner.tr {
+  border-bottom-left-radius: 6px;
+  border-top-right-radius: 6px;
   right: -1px;
   top: -1px;
   width: 32px;
-  z-index: 1;
 }
 
 .corner div {

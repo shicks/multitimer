@@ -1,3 +1,5 @@
+'use strict';
+
 const React = require('react');
 const ReactDOM = require('react-dom');
 
@@ -8,11 +10,9 @@ const timerDiv = document.getElementsByClassName('timers')[0];
 const timers = [];
 
 function updateTimers() {
-  const names = 
-        Array.prototype.map.call(document.querySelectorAll('.name input'),
-                                 (input) => escape(input.value)).join('|');
   if (localStorage) {
-    localStorage.setItem('timerNames', names);
+    const names = timers.map((timer) => timer.label());
+    localStorage.setItem('timerNames', names.join('|'));
   }
 }
 
@@ -48,16 +48,26 @@ function addTimer(name = '') {
     return children[0];
   }
 
+  let elapsed = 0;
+  const eq = name.indexOf('=');
+  if (eq >= 0) {
+    elapsed = Number(name.substring(eq + 1)) * 1000;
+    name = name.substring(0, eq);
+  }
+  name = unescape(name);
+
   child('name').firstElementChild.value = name;
 
   const hourTime = child('time-hours');
   const minuteTime = child('time-minutes');
 
-  let elapsed = 0;
   let started = undefined;
 
+  // TODO(sdh): use an object instead of a function as the timer.
+  const currentTime = () =>
+      (elapsed + (started ? new Date() - started : 0)) / 1000
   const update = () => {
-    const full = (elapsed + (started ? new Date() - started : 0)) / 1000;
+    const full = currentTime();
     let hours = Math.floor(full / 3600);
     let minutes = String(Math.floor((full % 3600) / 60));
     let seconds = String(Math.floor(full % 60));
@@ -71,21 +81,36 @@ function addTimer(name = '') {
     if (seconds.length < 2) seconds = `0${seconds}`;
     hourTime.textContent = `${hourFrac}.${frac} h`;
     minuteTime.textContent = `${hours}:${minutes}:${seconds}`;
-  }
+  };
+  update.reset = () => {
+    elapsed = 0;
+    started = started && +new Date();
+    update();
+  };
+  update.label = () =>
+      escape(child('name').firstElementChild.value) + '=' +
+      ((started ? -1 : 1) * currentTime());
 
-  timers.push(update);
-  child('start').addEventListener('click', () => {
+  const start = () => {
     started = +new Date();
     element.classList.add('started');
-  });
+    update();
+  }
+  if (elapsed < 0) {
+    elapsed *= -1;
+    start();
+  }
+  child('start').addEventListener('click', start);
   child('pause').addEventListener('click', () => {
     elapsed += (new Date() - started);
     started = undefined;
     element.classList.remove('started');
+    update();
   });
   child('reset').addEventListener('click', () => {
     elapsed = 0;
     started = started && +new Date();
+    update();
   });
   child('delete').addEventListener('click', () => {
     element.remove();
@@ -93,7 +118,7 @@ function addTimer(name = '') {
     updateTimers();
   });
   child('name').firstElementChild.addEventListener('blur', updateTimers);
-
+  timers.push(update);
 }
 
 document.getElementsByClassName('new')[0].addEventListener('click', () => {
@@ -106,18 +131,22 @@ document.getElementsByClassName('hours')[0].addEventListener('click', () => {
 document.getElementsByClassName('minutes')[0].addEventListener('click', () => {
   timerDiv.classList.add('hourmode');
 });
+document.getElementsByClassName('reset-all')[0].addEventListener('click', () => {
+  timers.forEach((timer) => timer.reset());
+});
 
 document.body.addEventListener('keypress', (e) => {
   if (e.key == 'Enter') e.target.blur();
 });
 
-function update() {
-  timers.forEach((timer) => timer());
-  window.setTimeout(update, 1000);
-}
-update();
-
 const storageTimers =
     localStorage &&
     (localStorage.getItem('timerNames') || '').split('|') || [];
-storageTimers.forEach((timer) => addTimer(unescape(timer)));
+storageTimers.forEach((timer) => addTimer(timer));
+
+function update() {
+  timers.forEach((timer) => timer());
+  window.setTimeout(update, 1000);
+  updateTimers();
+}
+update();
