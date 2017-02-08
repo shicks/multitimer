@@ -1,3 +1,4 @@
 .deploy
 timer-transpiled.js
 node_modules
+gh-pages
