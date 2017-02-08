@@ -1,3 +1,7 @@
+.template {
+  display: none;
+}
+
 .timers {
   align-content: flex-start;
   align-items: flex-start;
