@@ -4,18 +4,13 @@
   "description": "A simple multi-timer",
   "main": "index.js",
   "scripts": {
-    "postinstall": "browserify -o timer.js -t [ babelify --presets [ es2015 react ] ] timer.jsx",
+    "postinstall": "browserify -o timer-transpiled.js -t [ babelify --presets [ es2015 ] ] timer.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "react": "^15.4.2",
-    "react-dom": "^15.4.2"
-  },
   "devDependencies": {
     "babel-preset-es2015": "^6.18.0",
-    "babel-preset-react": "^6.16.0",
     "babelify": "^7.3.0",
     "browserify": "^13.3.0"
   }

@@ -1,8 +1,5 @@
 'use strict';
 
-const React = require('react');
-const ReactDOM = require('react-dom');
-
 const HOUR_MODE = 'hourmode';
 const STARTED = 'started';
 
@@ -17,27 +14,7 @@ function updateTimers() {
 }
 
 function addTimer(name = '') {
-  let element = document.createElement('div');
-  ReactDOM.render(
-      <div className="timer">
-        <div className="timerow">
-          <div className="time">
-            <div className="time-hours">0.0</div>
-            <div className="time-minutes">0:00:00</div>
-          </div>
-        </div>
-        <div className="buttons">
-          <div className="start material-icons">play_arrow</div>
-          <div className="pause material-icons">pause</div>
-          <div className="reset material-icons">replay</div>
-          <div className="delete material-icons">delete</div>
-        </div>
-        <div className="name">
-          <input type="text"></input>
-        </div>
-      </div>,
-      element);
-  element = element.firstChild;
+  let element = document.querySelector('.template .timer').cloneNode(true);
   timerDiv.insertBefore(element, timerDiv.lastElementChild);
 
   function child(className) {
