@@ -113,7 +113,7 @@ function addTimer(name = '') {
     update();
   });
   child('delete').addEventListener('click', () => {
-    element.remove();
+    element.parentNode.removeChild(element);
     timers.splice(timers.indexOf(update), 1);
     updateTimers();
   });
