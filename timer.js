@@ -20639,7 +20639,7 @@ function addTimer() {
     update();
   });
   child('delete').addEventListener('click', function () {
-    element.remove();
+    element.parentNode.removeChild(element);
     timers.splice(timers.indexOf(update), 1);
     updateTimers();
   });
