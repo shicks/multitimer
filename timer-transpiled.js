@@ -1,141 +1,18 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-'use strict';
-
-var HOUR_MODE = 'hourmode';
-var STARTED = 'started';
-
-var timerDiv = document.getElementsByClassName('timers')[0];
-var timers = [];
-
-function updateTimers() {
-  if (localStorage) {
-    var names = timers.map(function (timer) {
-      return timer.label();
-    });
-    localStorage.setItem('timerNames', names.join('|'));
-  }
-}
-
-function addTimer() {
-  var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-
-  var element = document.querySelector('.template .timer').cloneNode(true);
-  timerDiv.insertBefore(element, timerDiv.lastElementChild);
-
-  function child(className) {
-    var children = element.getElementsByClassName(className);
-    if (children.length < 1) {
-      throw new Error('could not find child ' + className);
-    }
-    return children[0];
-  }
-
-  var elapsed = 0;
-  var eq = name.indexOf('=');
-  if (eq >= 0) {
-    elapsed = Number(name.substring(eq + 1)) * 1000;
-    name = name.substring(0, eq);
-  }
-  name = unescape(name);
-
-  child('name').firstElementChild.value = name;
-
-  var hourTime = child('time-hours');
-  var minuteTime = child('time-minutes');
-
-  var started = undefined;
-
-  // TODO(sdh): use an object instead of a function as the timer.
-  var currentTime = function currentTime() {
-    return (elapsed + (started ? new Date() - started : 0)) / 1000;
-  };
-  var update = function update() {
-    var full = currentTime();
-    var hours = Math.floor(full / 3600);
-    var minutes = String(Math.floor(full % 3600 / 60));
-    var seconds = String(Math.floor(full % 60));
-    var frac = Math.round(full % 3600 / 360);
-    var hourFrac = hours;
-    if (frac == 10) {
-      frac = 0;
-      hourFrac++;
-    }
-    if (minutes.length < 2) minutes = '0' + minutes;
-    if (seconds.length < 2) seconds = '0' + seconds;
-    hourTime.textContent = hourFrac + '.' + frac + ' h';
-    minuteTime.textContent = hours + ':' + minutes + ':' + seconds;
-  };
-  update.reset = function () {
-    elapsed = 0;
-    started = started && +new Date();
-    update();
-  };
-  update.label = function () {
-    return escape(child('name').firstElementChild.value) + '=' + (started ? -1 : 1) * currentTime();
-  };
-
-  var start = function start() {
-    started = +new Date();
-    element.classList.add('started');
-    update();
-  };
-  if (elapsed < 0) {
-    elapsed *= -1;
-    start();
-  }
-  child('start').addEventListener('click', start);
-  child('pause').addEventListener('click', function () {
-    elapsed += new Date() - started;
-    started = undefined;
-    element.classList.remove('started');
-    update();
-  });
-  child('reset').addEventListener('click', function () {
-    elapsed = 0;
-    started = started && +new Date();
-    update();
-  });
-  child('delete').addEventListener('click', function () {
-    element.parentNode.removeChild(element);
-    timers.splice(timers.indexOf(update), 1);
-    updateTimers();
-  });
-  child('name').firstElementChild.addEventListener('blur', updateTimers);
-  timers.push(update);
-}
-
-document.getElementsByClassName('new')[0].addEventListener('click', function () {
-  addTimer();
-  updateTimers();
-});
-document.getElementsByClassName('hours')[0].addEventListener('click', function () {
-  timerDiv.classList.remove('hourmode');
-});
-document.getElementsByClassName('minutes')[0].addEventListener('click', function () {
-  timerDiv.classList.add('hourmode');
-});
-document.getElementsByClassName('reset-all')[0].addEventListener('click', function () {
-  timers.forEach(function (timer) {
-    return timer.reset();
-  });
-});
-
-document.body.addEventListener('keypress', function (e) {
-  if (e.key == 'Enter') e.target.blur();
-});
-
-var storageTimers = localStorage && (localStorage.getItem('timerNames') || '').split('|') || [];
-storageTimers.forEach(function (timer) {
-  return addTimer(timer);
-});
-
-function update() {
-  timers.forEach(function (timer) {
-    return timer();
-  });
-  window.setTimeout(update, 1000);
-  updateTimers();
-}
-update();
-
-},{}]},{},[1]);
+(function(){
+'use strict';var l="function"==typeof Object.defineProperties?Object.defineProperty:function(a,d,f){if(f.get||f.set)throw new TypeError("ES3 does not support getters and setters.");a!=Array.prototype&&a!=Object.prototype&&(a[d]=f.value)},m="undefined"!=typeof window&&window===this?this:"undefined"!=typeof global&&null!=global?global:this;function p(){p=function(){};m.Symbol||(m.Symbol=q)}var t=0;function q(a){return"jscomp_symbol_"+(a||"")+t++}
+function u(){p();var a=m.Symbol.iterator;a||(a=m.Symbol.iterator=m.Symbol("iterator"));"function"!=typeof Array.prototype[a]&&l(Array.prototype,a,{configurable:!0,writable:!0,value:function(){return v(this)}});u=function(){}}function v(a){var d=0;return w(function(){return d<a.length?{done:!1,value:a[d++]}:{done:!0}})}function w(a){u();a={next:a};a[m.Symbol.iterator]=function(){return this};return a}function x(a){u();var d=a[Symbol.iterator];return d?d.call(a):v(a)}
+for(var y=m,z=["Promise"],A=0;A<z.length-1;A++){var B=z[A];B in y||(y[B]={});y=y[B]}
+var C=z[z.length-1],D=y[C],E=function(){function a(a){this.b=0;this.h=void 0;this.a=[];var c=this.f();try{a(c.resolve,c.reject)}catch(e){c.reject(e)}}function d(){this.a=null}if(D)return D;d.prototype.b=function(a){this.a||(this.a=[],this.f());this.a.push(a)};d.prototype.f=function(){var a=this;this.c(function(){a.h()})};var f=m.setTimeout;d.prototype.c=function(a){f(a,0)};d.prototype.h=function(){for(;this.a&&this.a.length;){var a=this.a;this.a=[];for(var b=0;b<a.length;++b){var e=a[b];delete a[b];
+try{e()}catch(h){this.g(h)}}}this.a=null};d.prototype.g=function(a){this.c(function(){throw a;})};a.prototype.f=function(){function a(a){return function(c){e||(e=!0,a.call(b,c))}}var b=this,e=!1;return{resolve:a(this.o),reject:a(this.g)}};a.prototype.o=function(c){if(c===this)this.g(new TypeError("A Promise cannot resolve to itself"));else if(c instanceof a)this.s(c);else{var b;a:switch(typeof c){case "object":b=null!=c;break a;case "function":b=!0;break a;default:b=!1}b?this.m(c):this.i(c)}};a.prototype.m=
+function(a){var b=void 0;try{b=a.then}catch(e){this.g(e);return}"function"==typeof b?this.u(b,a):this.i(a)};a.prototype.g=function(a){this.j(2,a)};a.prototype.i=function(a){this.j(1,a)};a.prototype.j=function(a,b){if(0!=this.b)throw Error("Cannot settle("+a+", "+b|"): Promise already settled in state"+this.b);this.b=a;this.h=b;this.l()};a.prototype.l=function(){if(this.a){for(var a=this.a,b=0;b<a.length;++b)a[b].call(),a[b]=null;this.a=null}};var g=new d;a.prototype.s=function(a){var b=this.f();a.c(b.resolve,
+b.reject)};a.prototype.u=function(a,b){var e=this.f();try{a.call(b,e.resolve,e.reject)}catch(h){e.reject(h)}};a.prototype.then=function(c,b){function e(a,b){return"function"==typeof a?function(b){try{h(a(b))}catch(K){d(K)}}:b}var h,d,f=new a(function(a,b){h=a;d=b});this.c(e(c,h),e(b,d));return f};a.prototype.catch=function(a){return this.then(void 0,a)};a.prototype.c=function(a,b){function e(){switch(c.b){case 1:a(c.h);break;case 2:b(c.h);break;default:throw Error("Unexpected state: "+c.b);}}var c=
+this;this.a?this.a.push(function(){g.b(e)}):g.b(e)};a.resolve=function(c){return c instanceof a?c:new a(function(a){a(c)})};a.reject=function(c){return new a(function(a,e){e(c)})};a.b=function(c){return new a(function(b,e){for(var d=x(c),f=d.next();!f.done;f=d.next())a.resolve(f.value).c(b,e)})};a.a=function(c){var b=x(c),e=b.next();return e.done?a.resolve([]):new a(function(c,d){function f(a){return function(b){r[a]=b;h--;h||c(r)}}var r=[],h=0;do r.push(void 0),h++,a.resolve(e.value).c(f(r.length-
+1),d),e=b.next();while(!e.done)})};a.$jscomp$new$AsyncExecutor=function(){return new d};return a}();E!=D&&null!=E&&l(y,C,{configurable:!0,writable:!0,value:E});
+var F=document.getElementsByClassName("timers")[0],G=[],H=function(){function a(){}function d(e,d,n){g.textContent=e;for(c.textContent=d;b.firstChild;)b.removeChild(b.firstChild);e=x(n);for(d=e.next();!d.done;d=e.next())n=document.createElement("div"),n.textContent=d.value,b.appendChild(n);return new Promise(function(b){f.classList.add("visible");a=function(a){return b(a)}})}var f=document.querySelector(".modal-barrier"),g=f.querySelector(".title"),c=f.querySelector(".text"),b=f.querySelector(".buttons");
+b.addEventListener("click",function(c){c.target.parentNode==b&&(a(c.target.textContent),a=function(){},f.classList.remove("visible"))});return{show:d,confirm:function(a){return d("Confirm",a,["OK","Cancel"]).then(function(a){if("OK"!=a)throw"Cancel";})}}}();function I(){if(localStorage){var a=G.map(function(a){return a.label()});localStorage.setItem("timerNames",a.join("|"))}}
+function J(a){function d(){k=+new Date;c.classList.add("started");f()}function f(){var a=(b+(k?new Date-k:0))/1E3,c=Math.floor(a/3600),d=String(Math.floor(a%3600/60)),e=String(Math.floor(a%60)),a=Math.round(a%3600/360),f=c;10==a&&(a=0,f++);2>d.length&&(d="0"+d);2>e.length&&(e="0"+e);h.textContent=f+"."+a+" h";n.textContent=c+":"+d+":"+e}function g(a){var b=c.getElementsByClassName(a);if(1>b.length)throw Error("could not find child "+a);return b[0]}a=void 0===a?"":a;var c=document.querySelector(".template .timer").cloneNode(!0);
+F.insertBefore(c,F.lastElementChild);var b=0,e=a.indexOf("=");0<=e&&(b=1E3*Number(a.substring(e+1)),a=a.substring(0,e));a=unescape(a);g("name").firstElementChild.value=a;var h=g("time-hours"),n=g("time-minutes"),k=void 0;f.reset=function(){b=0;k=k&&+new Date;f()};f.label=function(){return escape(g("name").firstElementChild.value)+"="+(b+(k?new Date-k:0))/1E3*(k?-1:1)};0>b&&(b*=-1,d());g("start").addEventListener("click",d);g("pause").addEventListener("click",function(){b+=new Date-k;k=void 0;c.classList.remove("started");
+f()});g("reset").addEventListener("click",function(){b=0;k=k&&+new Date;f()});g("delete").addEventListener("click",function(){c.parentNode.removeChild(c);G.splice(G.indexOf(f),1);I()});g("name").firstElementChild.addEventListener("blur",I);G.push(f)}document.getElementsByClassName("new")[0].addEventListener("click",function(){J();I()});document.getElementsByClassName("hours")[0].addEventListener("click",function(){F.classList.remove("hourmode")});
+document.getElementsByClassName("minutes")[0].addEventListener("click",function(){F.classList.add("hourmode")});document.getElementsByClassName("reset-all")[0].addEventListener("click",function(){H.confirm("Reset all timers?").then(function(){G.forEach(function(a){return a.reset()})})});document.body.addEventListener("keypress",function(a){"Enter"==a.key&&a.target.blur()});(localStorage&&(localStorage.getItem("timerNames")||"").split("|")||[]).forEach(function(a){return J(a)});
+function L(){G.forEach(function(a){return a()});window.setTimeout(L,1E3);I()}L();
+}).call(this)

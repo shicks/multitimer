@@ -97,13 +97,13 @@
   width: 80%;
 }
 
-.buttons, .name {
+.timer .buttons, .name {
   display: flex;
   justify-content: space-around;
   align-items: center;
 }
 
-.buttons div {
+.timer .buttons div {
   border: 1px solid #aaa;
   border-radius: 3px;
   cursor: pointer;
@@ -136,4 +136,53 @@
   background: #f3f3f3;
   border: 1px solid #aaa;
   border-radius: 3px;
+}
+
+.modal-barrier {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.8);
+  bottom: 0;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 100;
+}
+
+.modal-barrier.visible {
+  display: flex;
+}
+
+.dialog {
+  border: 1px solid black;
+  border-radius: 5px;
+  width: 500px;
+}
+
+.dialog .title {
+  font-size: 120%;
+  margin-bottom: 5px;
+  border-bottom: 1px solid #aaa;
+  padding: 10px;
+}
+
+.dialog .text {
+  padding: 10px;
+}
+
+.dialog .buttons {
+  display: flex;
+  flex-direction: row-reverse;
+  padding: 10px;
+}
+
+.dialog .buttons div {
+  border: 1px solid black;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-left: 10px;
+  padding: 5px;
 }
