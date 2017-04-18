@@ -6,6 +6,44 @@ const STARTED = 'started';
 const timerDiv = document.getElementsByClassName('timers')[0];
 const timers = [];
 
+const dialog = (function() {
+  const top = document.querySelector('.modal-barrier');
+  const titleEl = top.querySelector('.title');
+  const textEl = top.querySelector('.text');
+  const buttonsEl = top.querySelector('.buttons');
+
+  // TODO(sdh): support drag-drop on title bar
+  let handler = () => {};
+  buttonsEl.addEventListener('click', e => {
+    if (e.target.parentNode != buttonsEl) return;
+    handler(e.target.textContent);
+    handler = () => {};
+    top.classList.remove('visible');
+  });
+
+  function confirm(text) {
+    return show('Confirm', text, ['OK', 'Cancel'])
+        .then(response => { if (response != 'OK') throw 'Cancel'; });
+  }
+
+  function show(title, text, buttons) {
+    titleEl.textContent = title;
+    textEl.textContent = text;
+    while (buttonsEl.firstChild) buttonsEl.removeChild(buttonsEl.firstChild);
+    for (const button of buttons) {
+      const div = document.createElement('div');
+      div.textContent = button;
+      buttonsEl.appendChild(div);
+    }
+    return new Promise((fulfill, reject) => {
+      top.classList.add('visible');
+      handler = text => fulfill(text);
+    });
+  }
+
+  return {show, confirm};
+}());
+
 function updateTimers() {
   if (localStorage) {
     const names = timers.map((timer) => timer.label());
@@ -109,7 +147,9 @@ document.getElementsByClassName('minutes')[0].addEventListener('click', () => {
   timerDiv.classList.add('hourmode');
 });
 document.getElementsByClassName('reset-all')[0].addEventListener('click', () => {
-  timers.forEach((timer) => timer.reset());
+  dialog.confirm('Reset all timers?').then(() => {
+    timers.forEach((timer) => timer.reset());
+  });
 });
 
 document.body.addEventListener('keypress', (e) => {

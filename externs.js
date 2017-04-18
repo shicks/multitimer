@@ -1,0 +1,2 @@
+/** @fileoverview @externs */
+var localStorage;
