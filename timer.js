@@ -17,9 +17,9 @@ let TimerHistory;
 
 /**
  * @typedef {{
- *   'name': string,
- *   'history': !Array<!TimerHistory>,
- *   'adjust': number,
+ *   'name': (string|undefined),
+ *   'history': (!Array<!TimerHistory>|undefined),
+ *   'adjust': (number|undefined),
  * }}
  */
 let TimerState;
@@ -46,6 +46,8 @@ function computeState() {
 class Timer {
   /** Updates the timer's display, if necessary. */
   update() {}
+  /** Stops the timer. */
+  stop() {}
   /** Resets the timer. */
   reset() {}
   /** @return {string} The timer's label and current value. */
