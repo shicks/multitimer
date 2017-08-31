@@ -3,6 +3,44 @@ const STARTED = 'started';
 
 const /** !Element */ timerDiv = document.getElementsByClassName('timers')[0];
 const /** !Array<!Timer> */ timers = [];
+let /** boolean */ modal = false; // TODO(sdh): just use the class?
+
+
+/**
+ * If a non-final element in history is 'running' then it indicates the
+ * timer terminated abruptly.  For now we consider it to be not running
+ * while the tab is closed, but we could also add a way to edit history
+ * by merging over the gap.
+ * @typedef {{'start': number, 'stop': number, 'running': boolean}}
+ */
+let TimerHistory;
+
+/**
+ * @typedef {{
+ *   'name': string,
+ *   'history': !Array<!TimerHistory>,
+ *   'adjust': number,
+ * }}
+ */
+let TimerState;
+
+/**
+ * @typedef {{
+ *   'timers': !Array<!TimerState>,
+ *   'modal': boolean,
+ *   'hour': boolean,
+ * }}
+ */
+let ProgramState;
+
+/** @return {!ProgramState} */
+function computeState() {
+  return {
+    'timers': timers.map(timer => timer.state()),
+    'modal': modal,
+    'hour': !!timerDiv && timerDiv.classList.contains('hourmode'),
+  };
+}
 
 /** @record */
 class Timer {
@@ -12,6 +50,8 @@ class Timer {
   reset() {}
   /** @return {string} The timer's label and current value. */
   label() {}
+  /** @return {!TimerState} */
+  state() {}
 }
 
 /** @record */
@@ -30,13 +70,23 @@ class Dialog {
    * @return {!Promise<void>}
    */
   confirm(text) {}
+  /**
+   * Shows an aribitrary dialog, returns the entered text.
+   * @param {string} title
+   * @param {string} text
+   * @param {string=} placeholder
+   * @return {!Promise<string>}
+   */
+  prompt(title, text, placeholder) {}
 }
 
 const /** !Dialog */ dialog = (function() {
   const top = document.querySelector('.modal-barrier');
+  const dialogEl = top.querySelector('.dialog');
   const titleEl = top.querySelector('.title');
   const textEl = top.querySelector('.text');
   const buttonsEl = top.querySelector('.buttons');
+  const promptEl = top.querySelector('.prompt');
 
   // TODO(sdh): support drag-drop on title bar
   let /** function(string) */ handler = () => {};
@@ -54,6 +104,7 @@ const /** !Dialog */ dialog = (function() {
   }
 
   function show(title, text, buttons) {
+    dialogEl.classList.remove('prompt');
     titleEl.textContent = title;
     textEl.textContent = text;
     while (buttonsEl.firstChild) buttonsEl.removeChild(buttonsEl.firstChild);
@@ -68,7 +119,26 @@ const /** !Dialog */ dialog = (function() {
     });
   }
 
-  return {show, confirm};
+  function prompt(title, text, placeholder = '') {
+    dialogEl.classList.add('prompt');
+    promptEl.value = '';
+    promptEl.placeholder = placeholder;
+    titleEl.textContent = title;
+    textEl.textContent = text;
+    while (buttonsEl.firstChild) buttonsEl.removeChild(buttonsEl.firstChild);
+    for (const button of ['OK', 'Cancel']) {
+      const div = document.createElement('div');
+      div.textContent = button;
+      buttonsEl.appendChild(div);
+    }
+    return new Promise((fulfill, reject) => {
+      top.classList.add('visible');
+      handler =
+          (text) => text == 'OK' ? fulfill(promptEl.value) : reject('Cancel');
+    });
+  }
+
+  return {show, prompt, confirm};
 }());
 
 /** Updates localStorage with the current timer data. */
@@ -76,11 +146,12 @@ function updateTimers() {
   if (localStorage) {
     const names = timers.map((timer) => timer.label());
     localStorage.setItem('timerNames', names.join('|'));
+    localStorage.setItem('state', JSON.stringify(computeState()));
   }
 }
 
 /** Adds a timer with the given name. */
-function addTimer(/** string= */ name = '') {
+function addTimer(/** !TimerState= */ state = {}) {
   let element = document.querySelector('.template .timer').cloneNode(true);
   timerDiv.insertBefore(element, timerDiv.lastElementChild);
 
@@ -93,20 +164,17 @@ function addTimer(/** string= */ name = '') {
     return children[0];
   }
 
-  let /** number */ elapsed = 0;
-  const eq = name.indexOf('=');
-  if (eq >= 0) {
-    elapsed = Number(name.substring(eq + 1)) * 1000;
-    name = name.substring(0, eq);
+  let /** number|undefined */ started = undefined;
+  let /** number */ adjust = state['adjust'] || 0;
+  let /** number */ elapsed = adjust;
+  const /** !Array<!TimerHistory> */ history = state['history'] || [];
+  for (const {'start': start, 'stop': stop, 'running': running} of history) {
+    elapsed += stop - start;
   }
-  name = unescape(name);
-
-  child('name').firstElementChild.value = name;
+  child('name').firstElementChild.value = state['name'] || '';
 
   const hourTime = child('time-hours');
   const minuteTime = child('time-minutes');
-
-  let /** number|undefined */ started = undefined;
 
   // TODO(sdh): use an object instead of a function as the timer.
   const /** function(): number */ currentTime = () =>
@@ -126,44 +194,79 @@ function addTimer(/** string= */ name = '') {
     if (seconds.length < 2) seconds = `0${seconds}`;
     hourTime.textContent = `${hourFrac}.${frac} h`;
     minuteTime.textContent = `${hours}:${minutes}:${seconds}`;
+    if (history.length && history[history.length - 1]['running']) {
+      history[history.length - 1]['stop'] = +new Date();
+    }
   };
   const /** function() */ reset = () => {
-    elapsed = 0;
-    started = started && +new Date();
+    history.splice(0, history.length);
+    elapsed = adjust = 0;
+    if (started) {
+      started = +new Date();
+      history.push({'start': started, 'stop': started, 'running': true});
+    }
     update();
   };
+  // TODO(sdh): delete label function
   const /** function(): string */ label = () =>
       escape(child('name').firstElementChild.value) + '=' +
       ((started ? -1 : 1) * currentTime());
-  const timer = {update, reset, label};
-
-  const start = () => {
-    started = +new Date();
-    element.classList.add('started');
-    update();
-  };
-  if (elapsed < 0) {
-    elapsed *= -1;
-    start();
-  }
-  child('start').addEventListener('click', start);
-  child('pause').addEventListener('click', () => {
-    elapsed += (new Date() - started);
+  const /** function(): !TimerState */ computeState = () => ({
+    'name': child('name').firstElementChild.value,
+    'history': history,
+    'adjust': adjust,
+  });
+  const stop = () => {
+    if (!started) return;
+    const stop = +new Date();
+    history[history.length - 1]['stop'] = stop;
+    history[history.length - 1]['running'] = false;
+    elapsed += (stop - started);
     started = undefined;
     element.classList.remove('started');
     update();
-  });
-  child('reset').addEventListener('click', () => {
-    elapsed = 0;
-    started = started && +new Date();
+  };
+  const timer = {update, reset, label, stop, state: computeState};
+
+  const start = () => {
+    if (modal) stopAll();
+    started = +new Date();
+    // TODO(sdh): consolidate older history entries?
+    history.push({'start': started, 'stop': started, 'running': true});
+    element.classList.add('started');
     update();
-  });
+  };
+  if (history.length && history[history.length - 1]['running']) {
+    start();
+  }
+  child('start').addEventListener('click', start);
+  child('pause').addEventListener('click', stop);
+  child('reset').addEventListener('click', reset);
   child('delete').addEventListener('click', () => {
     element.parentNode.removeChild(element);
     timers.splice(timers.indexOf(timer), 1);
     updateTimers();
   });
   child('name').firstElementChild.addEventListener('blur', updateTimers);
+  child('time').addEventListener('dblclick', () => {
+    dialog.prompt('Adjust Time', 'Please enter a new time' , '00:00:00')
+        .then((time) => {
+          let fields = time.split(':');
+          while (fields.length < 3) fields.unshift('0');
+          fields = fields.map(Number);
+          for (const field of fields) {
+            if (!Number.isInteger(field) || fields.length > 3) {
+              dialog.show('Error', `Could not parse time: "${time}"`, ['OK']);
+              return;
+            }
+          }
+          const adj = (fields[0] * 3600 + fields[1] * 60 + fields[2]) * 1000;
+          reset();
+          elapsed += adj;
+          adjust += adj;
+          update();
+        });
+  });
   timers.push(timer);
 }
 
@@ -177,6 +280,15 @@ document.getElementsByClassName('hours')[0].addEventListener('click', () => {
 document.getElementsByClassName('minutes')[0].addEventListener('click', () => {
   timerDiv.classList.add('hourmode');
 });
+document.getElementsByClassName('modal')[0].addEventListener('click', () => {
+  modal = false;
+  timerDiv.classList.remove('modal');
+});
+document.getElementsByClassName('non-modal')[0].addEventListener('click', () => {
+  // TODO(sdh): if more than one timer is running, that'do nothing?
+  modal = true;
+  timerDiv.classList.add('modal');
+});
 document.getElementsByClassName('reset-all')[0].addEventListener('click', () => {
   dialog.confirm('Reset all timers?').then(() => {
     timers.forEach((timer) => timer.reset());
@@ -187,11 +299,41 @@ document.body.addEventListener('keypress', (e) => {
 });
 
 // Initialize the timers from local storage.
-/** @type {!Array<string>} */
-const storageTimers =
-    localStorage &&
-    (localStorage.getItem('timerNames') || '').split('|') || [];
-storageTimers.forEach((timer) => addTimer(timer));
+/** @type {!ProgramState} */
+const storageState = (() => {
+  if (!localStorage) return {'modal': false, 'timers': []};
+  const stateJson = localStorage.getItem('state');
+  if (stateJson) return JSON.parse(stateJson);
+  // migrate legacy storage...
+  const timerNames = (localStorage.getItem('timerNames') || '').split('|');
+  const state = {'modal': false, 'timers': []};
+  timerNames.forEach((name) => {
+    const eq = name.indexOf('=');
+    const timer = {'history': [], 'adjust': 0};
+    if (eq >= 0) {
+      let elapsed = Number(name.substring(eq + 1)) * 1000;
+      name = name.substring(0, eq);
+      if (elapsed < 0) {
+        elapsed *= -1;
+        const now = +new Date();
+        timer['history'].push({'start': now, 'stop': now, running: true});
+      }
+      timer['adjust'] = elapsed;
+    }
+    name = unescape(name);
+    timer['name'] = name;
+    state['timers'].push(timer);
+  });
+  return state;
+})();
+
+timerDiv.classList.toggle('modal', modal = storageState['modal']);
+timerDiv.classList.toggle('hourmode', storageState['hour']),
+storageState['timers'].forEach((timer) => addTimer(timer));
+
+function stopAll() {
+  timers.forEach((timer) => timer.stop());
+}
 
 // Start updating.
 /** Runs every quarter second to update the timer display. */

@@ -40,9 +40,15 @@
 }
 
 .corner.tr {
-  border-bottom-left-radius: 6px;
   border-top-right-radius: 6px;
   right: -1px;
+  top: -1px;
+  width: 32px;
+}
+
+.corner.tr1 {
+  border-bottom-left-radius: 6px;
+  right: 32px;
   top: -1px;
   width: 32px;
 }
@@ -55,12 +61,15 @@
   cursor: pointer;
 }
 
+.final .modal,
+.modal .non-modal,
 .final .hours,
 .time-hours,
 .hourmode .final .minutes,
 .hourmode .time-minutes {
   display: none;
 }
+.modal .final .modal,
 .hourmode .final .hours,
 .hourmode .time-hours {
   display: block;
@@ -157,6 +166,7 @@
 }
 
 .dialog {
+  background: white;
   border: 1px solid black;
   border-radius: 5px;
   width: 500px;
@@ -171,6 +181,17 @@
 
 .dialog .text {
   padding: 10px;
+}
+
+.dialog .prompt {
+  display: none;
+}
+
+.dialog.prompt .prompt {
+  display: flex;
+  margin-left: 10px;
+  padding: 5px;
+  width: 466px;
 }
 
 .dialog .buttons {
