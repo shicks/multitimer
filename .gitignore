@@ -1,4 +1,7 @@
 .deploy
-timer-transpiled.js
-node_modules
+.publish
+dist
 gh-pages
+node_modules
+npm-debug.log
+timer-transpiled.js
