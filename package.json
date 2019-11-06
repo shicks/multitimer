@@ -13,7 +13,6 @@
   "devDependencies": {
     "google-closure-compiler": "^20190121.0.0",
     "gulp": "^4.0.2",
-    "gulp-cli": "^2.2.0",
-    "gulp-gh-pages": "^0.5.4"
+    "gulp-cli": "^2.2.0"
   }
 }

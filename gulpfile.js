@@ -1,6 +1,5 @@
 const gulp = require('gulp');
 const closureCompiler = require('google-closure-compiler').gulp();
-const ghPages = require('gulp-gh-pages');
 
 gulp.task('js', () =>
     gulp.src(['timer.js', 'externs.js'])
@@ -18,7 +17,3 @@ gulp.task('copy', () =>
           .pipe(gulp.dest('./dist')));
 
 gulp.task('default', gulp.series(['js', 'copy'], () => Promise.resolve()));
-
-gulp.task('deploy', () =>
-    gulp.src('./dist/**/*')
-          .pipe(ghPages()));
