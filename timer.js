@@ -20,6 +20,7 @@ let TimerHistory;
  *   'name': (string|undefined),
  *   'history': (!Array<!TimerHistory>|undefined),
  *   'adjust': (number|undefined),
+ *   'summed': (boolean|undefined),
  * }}
  */
 let TimerState;
@@ -54,6 +55,8 @@ class Timer {
   label() {}
   /** @return {!TimerState} */
   state() {}
+  /** @return {number} */
+  value() {}
 }
 
 /** @record */
@@ -150,6 +153,19 @@ function updateTimers() {
     localStorage.setItem('timerNames', names.join('|'));
     localStorage.setItem('state', JSON.stringify(computeState()));
   }
+  let sum = 0;
+  let summing = false;
+  for (const timer of timers) {
+    if (timer.state()['summed']) {
+      summing = true;
+      sum += timer.value();
+    }
+  }
+  document.body.classList.toggle('summing', summing);
+  if (summing) {
+    document.querySelector('.sum .time-hours').textContent = formatHourTime(sum);
+    document.querySelector('.sum .time-minutes').textContent = formatTime(sum);
+  }
 }
 
 /** Adds a timer with the given name. */
@@ -174,6 +190,7 @@ function addTimer(/** !TimerState= */ state = {}) {
     elapsed += stop - start;
   }
   child('name').firstElementChild.value = state['name'] || '';
+  element.classList.toggle('summed', state['summed']);
 
   const hourTime = child('time-hours');
   const minuteTime = child('time-minutes');
@@ -183,19 +200,8 @@ function addTimer(/** !TimerState= */ state = {}) {
       (elapsed + (started ? new Date() - started : 0)) / 1000;
   const /** function() */ update = () => {
     const full = currentTime();
-    let hours = Math.floor(full / 3600);
-    let minutes = String(Math.floor((full % 3600) / 60));
-    let seconds = String(Math.floor(full % 60));
-    let frac = Math.round((full % 3600) / 360);
-    let hourFrac = hours;
-    if (frac == 10) {
-      frac = 0;
-      hourFrac++;
-    }
-    if (minutes.length < 2) minutes = `0${minutes}`;
-    if (seconds.length < 2) seconds = `0${seconds}`;
-    hourTime.textContent = `${hourFrac}.${frac} h`;
-    minuteTime.textContent = `${hours}:${minutes}:${seconds}`;
+    minuteTime.textContent = formatTime(full);
+    hourTime.textContent = formatHourTime(full);
     if (history.length && history[history.length - 1]['running']) {
       history[history.length - 1]['stop'] = +new Date();
     }
@@ -217,6 +223,7 @@ function addTimer(/** !TimerState= */ state = {}) {
     'name': child('name').firstElementChild.value,
     'history': history,
     'adjust': adjust,
+    'summed': element.classList.contains('summed'),
   });
   const stop = () => {
     if (!started) return;
@@ -228,7 +235,8 @@ function addTimer(/** !TimerState= */ state = {}) {
     element.classList.remove('started');
     update();
   };
-  const timer = {update, reset, label, stop, state: computeState};
+  const timer = {update, reset, label, stop,
+                 state: computeState, value: currentTime};
 
   const start = () => {
     if (modal) stopAll();
@@ -241,9 +249,15 @@ function addTimer(/** !TimerState= */ state = {}) {
   if (history.length && history[history.length - 1]['running']) {
     start();
   }
+
+  const sumToggle = () => {
+    element.classList.toggle('summed');
+    updateTimers();
+  };
   child('start').addEventListener('click', start);
   child('pause').addEventListener('click', stop);
   child('reset').addEventListener('click', reset);
+  child('sum').addEventListener('click', sumToggle);
   child('delete').addEventListener('click', () => {
     element.parentNode.removeChild(element);
     timers.splice(timers.indexOf(timer), 1);
@@ -253,6 +267,7 @@ function addTimer(/** !TimerState= */ state = {}) {
   child('time').addEventListener('dblclick', () => {
     dialog.prompt('Adjust Time', 'Please enter a new time' , '00:00:00')
         .then((time) => {
+          if (!time) return;
           let fields = time.split(':');
           while (fields.length < 3) fields.unshift('0');
           fields = fields.map(Number);
@@ -272,21 +287,21 @@ function addTimer(/** !TimerState= */ state = {}) {
   timers.push(timer);
 }
 
-document.getElementsByClassName('new')[0].addEventListener('click', () => {
+document.querySelector('.new').addEventListener('click', () => {
   addTimer();
   updateTimers();
 });
-document.getElementsByClassName('hours')[0].addEventListener('click', () => {
+document.querySelector('.hours').addEventListener('click', () => {
   timerDiv.classList.remove('hourmode');
 });
-document.getElementsByClassName('minutes')[0].addEventListener('click', () => {
+document.querySelector('.minutes').addEventListener('click', () => {
   timerDiv.classList.add('hourmode');
 });
-document.getElementsByClassName('modal')[0].addEventListener('click', () => {
+document.querySelector('.modal').addEventListener('click', () => {
   modal = false;
   timerDiv.classList.remove('modal');
 });
-document.getElementsByClassName('non-modal')[0].addEventListener('click', () => {
+document.querySelector('.non-modal').addEventListener('click', () => {
   // TODO(sdh): if more than one timer is running, that'do nothing?
   modal = true;
   timerDiv.classList.add('modal');
@@ -335,6 +350,30 @@ storageState['timers'].forEach((timer) => addTimer(timer));
 
 function stopAll() {
   timers.forEach((timer) => timer.stop());
+}
+
+/** @param {number} seconds
+    @return {string} */
+function formatTime(seconds) {
+  let hours = Math.floor(seconds / 3600);
+  let mins = String(Math.floor((seconds % 3600) / 60));
+  let secs = String(Math.floor(seconds % 60));
+  if (mins.length < 2) mins = `0${mins}`;
+  if (secs.length < 2) secs = `0${secs}`;
+  return `${hours}:${mins}:${secs}`;
+}
+
+/** @param {number} seconds
+    @return {string} */
+function formatHourTime(seconds) {
+  let hours = Math.floor(seconds / 3600);
+  let frac = Math.round((seconds % 3600) / 360);
+  let hourFrac = hours;
+  if (frac == 10) {
+    frac = 0;
+    hourFrac++;
+  }
+  return `${hourFrac}.${frac} h`;
 }
 
 // Start updating.
