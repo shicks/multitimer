@@ -190,7 +190,7 @@ function addTimer(/** !TimerState= */ state = {}) {
     elapsed += stop - start;
   }
   child('name').firstElementChild.value = state['name'] || '';
-  element.classList.toggle('summed', state['summed']);
+  element.classList.toggle('summed', state['summed'] || false);
 
   const hourTime = child('time-hours');
   const minuteTime = child('time-minutes');
